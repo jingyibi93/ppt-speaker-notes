@@ -1,0 +1,20 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# Generated speaker-note outputs
+*_speaker_notes.md
+*_with_notes.pptx
+
+# Temporary/material folders created while testing decks
+*_speaker_note_materials/
+*_speaker_note_materials_*/
+*_require_render_test/
+_skill_opt_test_*/
+
+# Source decks and large local test files should not be committed by accident
+*.ppt
+*.pptx
+*.pdf
+!examples/**/*.pptx
+!examples/**/*.pdf
