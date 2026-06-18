@@ -58,6 +58,27 @@ Use this skill to create speaker notes for an existing presentation that has lit
   - `<deck-name>_with_notes.pptx` for PPTX inputs
 - Keep temporary render/extraction materials separate from the final output folder unless the user asks to keep debug materials.
 
+## Dependency Guidance
+
+- Always run `scripts/check_render_environment.py` before processing a deck that needs visual analysis.
+- If dependencies are missing, explain what capability is unavailable in plain language:
+  - Missing Poppler/PyMuPDF means PDF pages may not render to images.
+  - Missing LibreOffice means PPT/PPTX may not convert to PDF for slide-image rendering.
+  - Missing ffmpeg/ffprobe means embedded video previews may not be extracted.
+  - Missing Pillow means GIF keyframe sheets and contact sheets may not be created.
+- Provide installation guidance when useful, but do not install dependencies unless the user explicitly approves installation.
+- If the user wants help installing dependencies, ask for confirmation before running install commands.
+- Recommended macOS commands:
+
+```bash
+brew install poppler
+brew install --cask libreoffice
+brew install ffmpeg
+python3 -m pip install PyMuPDF pypdf Pillow
+```
+
+- If the user declines installation or installation is unavailable, continue with the best safe fallback and clearly label limitations, such as "text-only draft" or "visual analysis limited because slides could not be rendered."
+
 ## Workflow
 
 1. Determine output language and final output folder. If either is unclear and cannot be safely inferred from the request, ask one concise question before generating final files.
@@ -69,6 +90,8 @@ python scripts/check_render_environment.py
 ```
 
 In Codex Desktop, if regular `python` lacks document/image packages, use the bundled workspace Python runtime when available. It is more likely to include Pillow and PDF text extraction libraries.
+
+If the environment check reports missing tools, follow the Dependency Guidance section before deciding whether to continue, ask for installation approval, or produce a limited draft.
 
 Stable visual analysis requires:
 
