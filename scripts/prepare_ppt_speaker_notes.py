@@ -145,6 +145,16 @@ def stable_presentation_converter_available() -> bool:
     return bool(shutil.which("soffice") or shutil.which("libreoffice"))
 
 
+def missing_render_dependencies(input_file: Path) -> list[str]:
+    missing: list[str] = []
+    suffix = input_file.suffix.lower()
+    if suffix in {".ppt", ".pptx"} and not stable_presentation_converter_available():
+        missing.append("LibreOffice/soffice is required to convert PPT/PPTX to PDF without GUI popups")
+    if not stable_pdf_renderer_available():
+        missing.append("Poppler pdftoppm or Python PyMuPDF/fitz is required to render PDF pages to PNG")
+    return missing
+
+
 def convert_presentation_to_pdf(input_file: Path, output_dir: Path) -> tuple[Path | None, list[str]]:
     attempts: list[str] = []
     soffice = shutil.which("soffice") or shutil.which("libreoffice")
@@ -480,7 +490,7 @@ def main() -> int:
                 pdf_for_render = copied_pdf
                 render_status = "converted pptx to pdf"
             else:
-                render_status = "pptx rendering unavailable; install LibreOffice or export PDF"
+                render_status = "pptx rendering unavailable; install LibreOffice/soffice for no-popup PDF export"
     elif suffix == ".ppt":
         with tempfile.TemporaryDirectory() as tmp:
             pdf_for_render, export_attempts = convert_presentation_to_pdf(input_file, Path(tmp))
@@ -490,7 +500,7 @@ def main() -> int:
                 pdf_for_render = copied_pdf
                 render_status = "converted ppt to pdf"
             else:
-                render_status = "ppt rendering unavailable; install LibreOffice or export PDF"
+                render_status = "ppt rendering unavailable; install LibreOffice/soffice for no-popup PDF export"
     elif suffix == ".pdf":
         pdf_for_render = input_file
         slides = read_pdf_text(input_file)
@@ -572,9 +582,16 @@ def main() -> int:
     if rendered_images:
         print(f"Rendered images: {slides_dir}")
     else:
-        print("No slide images rendered. For visual decks, export to PDF or install render dependencies.")
+        print("No slide images rendered. Install the required render dependencies before visual analysis.")
         if args.require_render:
             print("Rendering is required but no per-page images were produced.", file=sys.stderr)
+            for item in missing_render_dependencies(input_file):
+                print(f"- {item}", file=sys.stderr)
+            print("Recommended macOS setup:", file=sys.stderr)
+            print("  brew install poppler", file=sys.stderr)
+            print("  brew install --cask libreoffice", file=sys.stderr)
+            print("  brew install ffmpeg", file=sys.stderr)
+            print("  python3 -m pip install PyMuPDF pypdf Pillow", file=sys.stderr)
             return 3
     return 0
 

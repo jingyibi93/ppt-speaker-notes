@@ -1,6 +1,6 @@
 ---
 name: ppt-speaker-notes
-description: Generate natural speaker notes or narration drafts for old PPT/PPTX/PDF slide decks, especially visual/design-heavy presentations. Use when the user wants Codex to analyze the whole deck context, render slides to images when possible, interpret design intent conservatively, choose Chinese/English/bilingual output from the user's request language or explicit language choice, and produce an independent notes document or a safe copy instead of overwriting the original presentation.
+description: Generate natural speaker notes or narration drafts for old PPT/PPTX/PDF slide decks, especially visual/design-heavy presentations. Use when the user wants Codex to analyze the whole deck context, render slides to images when possible, interpret design intent conservatively, choose Chinese/English/bilingual output from the user's request language or explicit language choice, adapt tone and terminology by presenter role, design discipline, and presentation scenario, and produce an independent notes document or a safe copy instead of overwriting the original presentation.
 ---
 
 # PPT Speaker Notes
@@ -22,6 +22,64 @@ Use this skill to create speaker notes for an existing presentation that has lit
 - Do not overwrite the original PPT/PPTX/PDF. If the user asks for notes written back into PPT, create a copy first.
 - When evidence is uncertain, use conservative wording. In Chinese, use phrases such as "这一页看起来是在强调..." or "从画面上看，可能是在表达...". In English, use phrases such as "This slide appears to emphasize...", "From the visual evidence, it may be suggesting...", or "It seems likely that the intention here is...".
 
+## No-Popup Rendering Policy
+
+- Default to a non-interactive pipeline. Do not use PowerPoint or Keynote GUI automation for PPT/PPTX rendering unless the user explicitly requests it after being warned that macOS may show file-access authorization dialogs.
+- For PPT/PPTX visual rendering, use LibreOffice/`soffice` headless export to PDF as the stable no-popup path, then render the PDF pages to images.
+- If LibreOffice/`soffice` is missing, do not silently fall back to PowerPoint/Keynote automation. Explain that no-popup PPT rendering requires LibreOffice and ask whether to install it or continue with a limited text-only draft.
+- If Poppler and PyMuPDF are both missing after a PPT/PPTX is converted to PDF, use any available non-GUI PDF rendering fallback. If none is available, ask to install Poppler or PyMuPDF before claiming visual analysis.
+- Use PowerPoint/Keynote automation only as an opt-in fallback for users who accept possible popups, timeouts, and local permission prompts.
+- For visual/design-heavy decks, rendering is mandatory. Always call `scripts/prepare_ppt_speaker_notes.py` with `--require-render`. If it fails, stop and report the missing render dependencies; do not generate a visually framed speaker script from text alone.
+
+## PPT + PDF Pairing
+
+- When the user provides a PPT/PPTX for a visual/design-heavy deck, remind them that the best input is the original PPT/PPTX plus an exported PDF from the same deck.
+- Explain the pairing clearly:
+  - Use the PDF for stable per-slide visual understanding.
+  - Use the PPT/PPTX for extracting structure and writing notes back into a new `_with_notes.pptx` copy.
+- If the user provides both PPT/PPTX and a matching PDF, prefer the PDF for rendering and visual analysis, and use the PPT/PPTX only for text/notes extraction and speaker-note insertion.
+- If the user provides only PPT/PPTX, continue with the no-popup rendering path when stable dependencies are available. If rendering fails, ask for a matching PDF or dependency fix before producing visual speaker notes.
+- Do not require a PDF for text-only drafts, but clearly label the output as text-only if no rendered pages were used.
+- Suggested Chinese reminder when only PPT/PPTX is provided: "为了提高视觉理解准确率，最好同时提供同一份 PPT 导出的 PDF。我可以用 PDF 看每页画面，再把讲稿写回 PPTX。你也可以先让我直接尝试处理 PPTX。"
+- Suggested English reminder when only PPT/PPTX is provided: "For better visual accuracy, it is best to provide the original PPT/PPTX together with a PDF exported from the same deck. I can use the PDF for slide-image analysis and the PPTX for writing speaker notes back."
+
+## Presentation Profile
+
+Before writing the final notes, determine a presentation profile. The profile affects tone, content organization, and professional terminology.
+
+- Role options:
+  - Student: reflective, process-aware, able to explain learning, research, iteration, and design decisions without sounding overly senior.
+  - Teacher: explanatory and structured, with more context-setting and concept clarification. Use this only when the user explicitly chooses teacher or the deck is clearly for teaching.
+  - Designer: professional, intention-led, focused on rationale, craft, user or audience impact, and design tradeoffs.
+  - Working professional: concise, outcome-oriented, stakeholder-aware, with clearer links to goals, constraints, collaboration, and next steps.
+- Discipline options:
+  - Architecture and interior design: emphasize site/context, spatial sequence, circulation, scale, program, material, structure, atmosphere, light, construction logic, and user scenario.
+  - Interaction design: emphasize user needs, tasks, journey, information architecture, interaction flow, feedback, states, usability, accessibility, and product experience.
+  - Visual communication: emphasize message hierarchy, visual rhythm, typography, imagery, layout, media, audience perception, and communication effectiveness.
+  - Art design: emphasize concept, medium, form, sensory experience, cultural reference, expression, installation or object relationship, and interpretive openness.
+  - Graphic design: emphasize grid, typography, composition, contrast, color system, print or screen context, information clarity, and visual consistency.
+  - Brand design: emphasize positioning, brand personality, identity system, logo/type/color rules, touchpoints, campaign context, recognition, and brand experience.
+- Scenario options:
+  - Formal presentation: polished, structured, confident, concise, and suitable for review panels or clients.
+  - Classroom teaching: explanatory, slower-paced, with more definition, comparison, and step-by-step reasoning.
+  - Portfolio defense: first-person when supported, focused on personal contribution, design process, decisions, results, reflection, and ability.
+  - Casual sharing: warmer, lighter, more conversational, with less rigid structure and simpler transitions.
+- Infer the profile from the user's request only when it is explicit or strongly implied, such as "for portfolio defense", "for class lecture", "as a brand designer", or "teacher notes".
+- If any of role, discipline, scenario, or final output folder is unclear, use a step-by-step selection flow instead of asking for everything at once. Ask only one question at a time, wait for the user's answer, then ask the next missing question.
+- Use this Chinese step-by-step flow when the user is working in Chinese:
+  1. "请选择讲稿适用的角色：学生 / 老师 / 设计师 / 职场人"
+  2. "请选择专业方向：建筑及室内设计 / 交互设计 / 视觉传达 / 艺术设计 / 平面设计 / 品牌设计"
+  3. "请选择使用场景：正式汇报 / 课堂讲解 / 作品集答辩 / 轻松分享"
+  4. "请选择最终文件保存位置，例如：桌面、原文件同级文件夹，或你指定的文件夹路径。"
+- Use this English step-by-step flow when the user is working in English:
+  1. "Choose the presenter role: student / teacher / designer / working professional"
+  2. "Choose the design discipline: architecture and interior design / interaction design / visual communication / art design / graphic design / brand design"
+  3. "Choose the presentation scenario: formal presentation / classroom teaching / portfolio defense / casual sharing"
+  4. "Choose the final output folder, for example: Desktop, same folder as the source deck, or a specific folder path."
+- If the user already provides one or more choices, do not ask those again. Continue with the next missing step only.
+- Do not let the profile override evidence. Use discipline-specific terminology only when the slide content supports it.
+- If the user asks to proceed without choosing, default to Designer + Architecture and interior design + Formal presentation for design-heavy spatial decks, or Designer + Visual communication + Formal presentation for general visual/design decks.
+
 ## Presentation Style
 
 - Treat the main per-slide output as the actual script, not advice about how to speak. Use the label "讲稿" in Chinese and "Presentation Script" in English.
@@ -30,6 +88,12 @@ Use this skill to create speaker notes for an existing presentation that has lit
 - Keep analytical notes separate from the script. "页面理解 / Slide Reading" can summarize evidence briefly, but the "讲稿 / Presentation Script" should read as spoken presentation language.
 - For design portfolios or visual decks, the script should not merely describe visible elements. It should connect visual choices to design intention, user experience, site/context, material atmosphere, and the presenter's role when evidence supports it.
 - Use first person only when the source deck or user context supports it, especially for portfolios. Otherwise use neutral phrasing.
+- Shape the per-slide organization around the selected profile:
+  - Formal presentations should move from context to problem, strategy, evidence, and value.
+  - Classroom teaching should move from concept explanation to examples, comparison, and takeaway.
+  - Portfolio defenses should move from brief context to personal role, process, decision, outcome, and reflection.
+  - Casual sharing should move from observation to story, experience, and simple takeaway.
+- Match terminology to the selected discipline. Prefer precise professional terms over generic praise, but avoid jargon stacking. When uncertain, use softer phrases such as "it reads as", "it appears to", or "the design seems to".
 
 ## Language Handling
 
@@ -49,9 +113,7 @@ Use this skill to create speaker notes for an existing presentation that has lit
 
 - Determine the final output folder before writing the Markdown notes or PPTX copy.
 - If the user gives an output folder, use it.
-- If the user does not give an output folder, ask one concise question before final generation, for example:
-  - Chinese: "你希望最终的讲稿 Markdown 和带备注 PPTX 保存到哪个文件夹？"
-  - English: "Which folder should I save the final Markdown notes and PPTX copy to?"
+- If the user does not give an output folder, ask for it as the final step of the Presentation Profile selection flow. Do not combine this question with role, discipline, or scenario selection.
 - Do not ask again if the user has already provided a folder in the same request.
 - Use the same final output folder for both:
   - `<deck-name>_speaker_notes.md`
@@ -77,13 +139,17 @@ brew install ffmpeg
 python3 -m pip install PyMuPDF pypdf Pillow
 ```
 
-- If the user declines installation or installation is unavailable, continue with the best safe fallback and clearly label limitations, such as "text-only draft" or "visual analysis limited because slides could not be rendered."
+- For a no-popup "drop in PPT and get Markdown + PPTX with notes" workflow on macOS, LibreOffice is required for PPT/PPTX-to-PDF export. Poppler or PyMuPDF is required for stable PDF-to-image rendering. ffmpeg is required only for video previews.
+- For design-heavy or visual analysis requests, do not continue as a text-only draft when rendering fails unless the user explicitly changes the task to "text-only". The default behavior is to fail clearly and ask to fix the render environment.
+- If the user explicitly requests a text-only draft after a render failure, clearly label limitations such as "text-only draft; visual analysis not performed".
 
 ## Workflow
 
-1. Determine output language and final output folder. If either is unclear and cannot be safely inferred from the request, ask one concise question before generating final files.
+1. Determine output language, presentation profile, and final output folder. The presentation profile must include role, discipline, and scenario. If role, discipline, scenario, or output folder is missing, ask for the missing items step by step in this order: role, discipline, scenario, output folder. Ask only one question per assistant turn unless the user explicitly asks to provide all choices at once.
 
-2. Check rendering support before processing design-heavy decks:
+2. If the input is PPT/PPTX and the request depends on visual understanding, check whether the user also provided a matching PDF. If yes, use the PDF for rendering and visual analysis while keeping the PPTX for note insertion. If no, remind the user that PPTX + matching PDF is the recommended high-accuracy setup, then either proceed with the stable no-popup PPTX rendering path or stop if rendering is unavailable.
+
+3. Check rendering support before processing design-heavy decks:
 
 ```bash
 python scripts/check_render_environment.py
@@ -100,36 +166,40 @@ Stable visual analysis requires:
 - GIF previews: Pillow
 - Video previews: `ffmpeg` and `ffprobe`
 
-3. Prepare working materials with the bundled script. Use a temporary output folder by default. For design-heavy decks, require rendering:
+4. Prepare working materials with the bundled script. Use a temporary output folder by default. For design-heavy decks or any request that depends on visual understanding, require rendering. If a matching PDF is available, run preparation on the PDF for visual materials:
 
 ```bash
 python scripts/prepare_ppt_speaker_notes.py INPUT_FILE --output /tmp/ppt-speaker-notes-<deck-name> --require-render
 ```
 
-4. Inspect `OUTPUT_DIR/manifest.json` and `OUTPUT_DIR/deck_context.md`.
-5. If `OUTPUT_DIR/contact_sheets/` contains overview images, inspect them first to understand the deck's structure, rhythm, repeated visual language, and section changes before going page by page.
-6. If `OUTPUT_DIR/slides/` contains images, inspect the slide images before writing notes. Visual/design-heavy decks must not be handled from extracted text alone.
+If this command exits nonzero because no per-page images were produced, stop. Report the missing dependencies from stderr and do not produce final notes unless the user explicitly asks for a text-only fallback.
+
+5. Inspect `OUTPUT_DIR/manifest.json` and `OUTPUT_DIR/deck_context.md`.
+6. If `OUTPUT_DIR/contact_sheets/` contains overview images, inspect them first to understand the deck's structure, rhythm, repeated visual language, and section changes before going page by page.
+7. If `OUTPUT_DIR/slides/` contains images, inspect the slide images before writing notes. Visual/design-heavy decks must not be handled from extracted text alone.
    - If `deck_context.md` reports GIF animations or video media, remember that PDF/image export usually captures only a static frame or poster frame. Mention this limitation and avoid over-interpreting motion, timing, sound, interaction, or sequence unless the animated media itself is separately inspected.
    - If `OUTPUT_DIR/animated_previews/` contains keyframe images, inspect those previews for GIF/video pages before writing notes.
-7. Build a deck-level understanding before writing per-slide notes:
+8. Build a deck-level understanding before writing per-slide notes:
    - likely audience and purpose
+   - selected or inferred role, discipline, and scenario
    - narrative arc across sections
    - recurring visual language, product, brand, or scenario
    - what each slide contributes to the flow
-8. Generate notes page by page. For design pages, cover:
+9. Generate notes page by page. For design pages, cover:
    - composition and hierarchy
    - style, material, color, lighting, and mood
    - visual focus and user scenario
    - possible design intention and tradeoffs
+   - terminology and content structure appropriate to the selected discipline
    - a natural presentation script that explains why the page matters
-9. Save the final notes as a standalone Markdown document in the confirmed final output folder unless the user requested another format.
-10. For PPTX input, write the final per-slide scripts back into a new PPTX copy in the confirmed final output folder:
+10. Save the final notes as a standalone Markdown document in the confirmed final output folder unless the user requested another format.
+11. For PPTX input, write the final per-slide scripts back into a new PPTX copy in the confirmed final output folder:
 
 ```bash
 python scripts/write_notes_to_pptx.py INPUT.pptx OUTPUT_FOLDER/<deck-name>_speaker_notes.md --output OUTPUT_FOLDER/<deck-name>_with_notes.pptx
 ```
 
-11. Clean up temporary material folders after the final Markdown and PPTX copy are verified. Keep the temporary folder only when the user asks for it or when it is needed to explain a rendering limitation.
+12. Clean up temporary material folders after the final Markdown and PPTX copy are verified. Keep the temporary folder only when the user asks for it or when it is needed to explain a rendering limitation.
 
 ## If Rendering Is Unavailable
 
@@ -143,8 +213,9 @@ PowerPoint/Keynote automation may be useful as a local fallback, but it is not c
 If no slide images are produced:
 
 - Do not pretend to have seen visual content.
-- Ask for the render environment to be fixed, or ask for a PDF export/rendered slide images if the deck is visual/design-heavy.
-- If PDF text was extracted, use it only as supporting evidence. Clearly state that the visual reading is limited until pages can be rendered as images.
+- Ask for the render environment to be fixed, preferably by installing the non-GUI dependencies. For PPT/PPTX, do not ask the user to manually export PDF unless they explicitly accept a manual workaround; the preferred skill experience is direct PPT input with automated no-popup processing.
+- If `--require-render` was used, treat missing slide images as a blocking failure for visual/design-heavy decks.
+- If PDF/PPT text was extracted, use it only as supporting evidence after the user explicitly requests a text-only fallback. Clearly state that visual reading was not performed.
 - If the user still wants a text-only draft, clearly label it as text-only and use cautious language.
 - For PPTX files with GIFs, embedded videos, or other animations, ask for exported video/GIF assets or a screen recording when motion, sound, timing, or interaction is important.
 - If `animated_media/` and `animated_previews/` exist, use them as evidence for animation pages. GIF previews are keyframe contact sheets; video previews require `ffmpeg`/`ffprobe`.
