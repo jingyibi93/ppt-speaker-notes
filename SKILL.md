@@ -25,9 +25,9 @@ Use this skill to create speaker notes for an existing presentation that has lit
 ## No-Popup Rendering Policy
 
 - Default to a non-interactive pipeline. Do not use PowerPoint or Keynote GUI automation for PPT/PPTX rendering unless the user explicitly requests it after being warned that macOS may show file-access authorization dialogs.
-- For PPT/PPTX visual rendering, use LibreOffice/`soffice` headless export to PDF as the stable no-popup path, then render the PDF pages to images.
-- If LibreOffice/`soffice` is missing, do not silently fall back to PowerPoint/Keynote automation. Explain that no-popup PPT rendering requires LibreOffice and ask whether to install it or continue with a limited text-only draft.
-- If Poppler and PyMuPDF are both missing after a PPT/PPTX is converted to PDF, use any available non-GUI PDF rendering fallback. If none is available, ask to install Poppler or PyMuPDF before claiming visual analysis.
+- Do not use LibreOffice/`soffice` to convert PPT/PPTX files for visual analysis. The preferred stable path is user-provided PDF rendering, because it avoids app crashes, layout drift, and macOS permission popups.
+- For PPT/PPTX decks that need visual understanding, remind the user to provide a matching PDF exported from the same presentation. Use that PDF for slide-image analysis.
+- If Poppler and PyMuPDF are both missing for PDF rendering, ask to install Poppler or PyMuPDF before claiming visual analysis.
 - Use PowerPoint/Keynote automation only as an opt-in fallback for users who accept possible popups, timeouts, and local permission prompts.
 - For visual/design-heavy decks, rendering is mandatory. Always call `scripts/prepare_ppt_speaker_notes.py` with `--require-render`. If it fails, stop and report the missing render dependencies; do not generate a visually framed speaker script from text alone.
 
@@ -38,10 +38,10 @@ Use this skill to create speaker notes for an existing presentation that has lit
   - Use the PDF for stable per-slide visual understanding.
   - Use the PPT/PPTX for extracting structure and writing notes back into a new `_with_notes.pptx` copy.
 - If the user provides both PPT/PPTX and a matching PDF, prefer the PDF for rendering and visual analysis, and use the PPT/PPTX only for text/notes extraction and speaker-note insertion.
-- If the user provides only PPT/PPTX, continue with the no-popup rendering path when stable dependencies are available. If rendering fails, ask for a matching PDF or dependency fix before producing visual speaker notes.
+- If the user provides only PPT/PPTX and needs visual/design analysis, pause and ask for the matching PDF before producing visual speaker notes. Do not try to convert the PPT/PPTX with LibreOffice/`soffice`.
 - Do not require a PDF for text-only drafts, but clearly label the output as text-only if no rendered pages were used.
-- Suggested Chinese reminder when only PPT/PPTX is provided: "为了提高视觉理解准确率，最好同时提供同一份 PPT 导出的 PDF。我可以用 PDF 看每页画面，再把讲稿写回 PPTX。你也可以先让我直接尝试处理 PPTX。"
-- Suggested English reminder when only PPT/PPTX is provided: "For better visual accuracy, it is best to provide the original PPT/PPTX together with a PDF exported from the same deck. I can use the PDF for slide-image analysis and the PPTX for writing speaker notes back."
+- Suggested Chinese reminder when only PPT/PPTX is provided: "为了保证视觉理解准确率，请同时提供这份 PPT 导出的同名 PDF。我会用 PDF 看每页画面；如果你需要把讲稿写入备注，再用 PPTX 生成新的带备注副本。"
+- Suggested English reminder when only PPT/PPTX is provided: "For reliable visual analysis, please also provide a matching PDF exported from this presentation. I will use the PDF for slide-image analysis, and use the PPTX only when you want the script written back into speaker notes."
 
 ## Presentation Profile
 
@@ -125,7 +125,6 @@ Before writing the final notes, determine a presentation profile. The profile af
 - Always run `scripts/check_render_environment.py` before processing a deck that needs visual analysis.
 - If dependencies are missing, explain what capability is unavailable in plain language:
   - Missing Poppler/PyMuPDF means PDF pages may not render to images.
-  - Missing LibreOffice means PPT/PPTX may not convert to PDF for slide-image rendering.
   - Missing ffmpeg/ffprobe means embedded video previews may not be extracted.
   - Missing Pillow means GIF keyframe sheets and contact sheets may not be created.
 - Provide installation guidance when useful, but do not install dependencies unless the user explicitly approves installation.
@@ -134,12 +133,11 @@ Before writing the final notes, determine a presentation profile. The profile af
 
 ```bash
 brew install poppler
-brew install --cask libreoffice
 brew install ffmpeg
 python3 -m pip install PyMuPDF pypdf Pillow
 ```
 
-- For a no-popup "drop in PPT and get Markdown + PPTX with notes" workflow on macOS, LibreOffice is required for PPT/PPTX-to-PDF export. Poppler or PyMuPDF is required for stable PDF-to-image rendering. ffmpeg is required only for video previews.
+- For a no-popup workflow on macOS, ask the user to provide a PDF export for visual analysis. Poppler or PyMuPDF is required for stable PDF-to-image rendering. PPTX is only needed when notes should be written back into a new `_with_notes.pptx` copy. ffmpeg is required only for video previews.
 - For design-heavy or visual analysis requests, do not continue as a text-only draft when rendering fails unless the user explicitly changes the task to "text-only". The default behavior is to fail clearly and ask to fix the render environment.
 - If the user explicitly requests a text-only draft after a render failure, clearly label limitations such as "text-only draft; visual analysis not performed".
 
@@ -147,7 +145,7 @@ python3 -m pip install PyMuPDF pypdf Pillow
 
 1. Determine output language, presentation profile, and final output folder. The presentation profile must include role, discipline, and scenario. If role, discipline, scenario, or output folder is missing, ask for the missing items step by step in this order: role, discipline, scenario, output folder. Ask only one question per assistant turn unless the user explicitly asks to provide all choices at once.
 
-2. If the input is PPT/PPTX and the request depends on visual understanding, check whether the user also provided a matching PDF. If yes, use the PDF for rendering and visual analysis while keeping the PPTX for note insertion. If no, remind the user that PPTX + matching PDF is the recommended high-accuracy setup, then either proceed with the stable no-popup PPTX rendering path or stop if rendering is unavailable.
+2. If the input is PPT/PPTX and the request depends on visual understanding, check whether the user also provided a matching PDF. If yes, use the PDF for rendering and visual analysis while keeping the PPTX for note insertion. If no, ask the user to provide a matching PDF before producing visual speaker notes. Do not use LibreOffice/`soffice` to convert the PPT/PPTX.
 
 3. Check rendering support before processing design-heavy decks:
 
@@ -162,7 +160,7 @@ If the environment check reports missing tools, follow the Dependency Guidance s
 Stable visual analysis requires:
 
 - PDF to images: Poppler `pdftoppm` or Python `PyMuPDF` / `fitz`
-- PPT/PPTX to PDF: LibreOffice / `soffice`
+- PPT/PPTX visual analysis: matching user-provided PDF from the same deck
 - GIF previews: Pillow
 - Video previews: `ffmpeg` and `ffprobe`
 
@@ -203,17 +201,18 @@ python scripts/write_notes_to_pptx.py INPUT.pptx OUTPUT_FOLDER/<deck-name>_speak
 
 ## If Rendering Is Unavailable
 
-The script attempts automatic rendering, but stable rendering depends on local converters:
+The script attempts rendering only for PDF inputs. Stable rendering depends on local PDF renderers:
 
 - PDF: use Poppler `pdftoppm` or Python `PyMuPDF` / `fitz`.
-- PPT/PPTX: use LibreOffice / `soffice` to convert to PDF, then render the PDF.
+- PPT/PPTX: provide a matching PDF for visual analysis; use PPTX only for text extraction, media extraction, and writing notes back.
 
-PowerPoint/Keynote automation may be useful as a local fallback, but it is not considered the stable path because macOS automation permissions and application scripting terminology vary by machine. Check `manifest.json` for `pptx_export_attempts`.
+PowerPoint/Keynote automation may be useful as a local fallback, but it is not considered the stable path because macOS automation permissions and application scripting terminology vary by machine. LibreOffice/`soffice` conversion is not part of this skill's default workflow.
 
 If no slide images are produced:
 
 - Do not pretend to have seen visual content.
-- Ask for the render environment to be fixed, preferably by installing the non-GUI dependencies. For PPT/PPTX, do not ask the user to manually export PDF unless they explicitly accept a manual workaround; the preferred skill experience is direct PPT input with automated no-popup processing.
+- For PDF input, ask for the PDF render environment to be fixed.
+- For PPT/PPTX input, ask for a matching PDF from the same presentation. If the user also needs notes written back, keep the PPTX for note insertion.
 - If `--require-render` was used, treat missing slide images as a blocking failure for visual/design-heavy decks.
 - If PDF/PPT text was extracted, use it only as supporting evidence after the user explicitly requests a text-only fallback. Clearly state that visual reading was not performed.
 - If the user still wants a text-only draft, clearly label it as text-only and use cautious language.

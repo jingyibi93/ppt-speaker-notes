@@ -11,7 +11,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import zipfile
 from html import unescape
 from pathlib import Path
@@ -141,43 +140,14 @@ def stable_pdf_renderer_available() -> bool:
         return False
 
 
-def stable_presentation_converter_available() -> bool:
-    return bool(shutil.which("soffice") or shutil.which("libreoffice"))
-
-
 def missing_render_dependencies(input_file: Path) -> list[str]:
     missing: list[str] = []
     suffix = input_file.suffix.lower()
-    if suffix in {".ppt", ".pptx"} and not stable_presentation_converter_available():
-        missing.append("LibreOffice/soffice is required to convert PPT/PPTX to PDF without GUI popups")
+    if suffix in {".ppt", ".pptx"}:
+        missing.append("A matching PDF exported from the same PPT/PPTX is required for visual analysis")
     if not stable_pdf_renderer_available():
         missing.append("Poppler pdftoppm or Python PyMuPDF/fitz is required to render PDF pages to PNG")
     return missing
-
-
-def convert_presentation_to_pdf(input_file: Path, output_dir: Path) -> tuple[Path | None, list[str]]:
-    attempts: list[str] = []
-    soffice = shutil.which("soffice") or shutil.which("libreoffice")
-    if not soffice:
-        attempts.append("LibreOffice not found")
-        return None, attempts
-
-    result = subprocess.run(
-        [soffice, "--headless", "--convert-to", "pdf", "--outdir", str(output_dir), str(input_file)],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    candidate = output_dir / f"{input_file.stem}.pdf"
-    if result.returncode == 0 and candidate.exists():
-        attempts.append("LibreOffice export succeeded")
-        return candidate, attempts
-    candidates = sorted(output_dir.glob("*.pdf"))
-    if result.returncode == 0 and candidates:
-        attempts.append("LibreOffice export succeeded")
-        return candidates[0], attempts
-    attempts.append(f"LibreOffice export failed: {(result.stderr or result.stdout).strip()[:500]}")
-    return None, attempts
 
 
 def render_pdf_to_images(pdf_file: Path, slides_dir: Path, width: int) -> list[Path]:
@@ -405,9 +375,8 @@ def write_context(output_dir: Path, input_file: Path, slides: list[dict[str, Any
 def collect_environment() -> dict[str, Any]:
     return {
         "stable_pdf_renderer_available": stable_pdf_renderer_available(),
-        "stable_presentation_converter_available": stable_presentation_converter_available(),
+        "stable_ppt_or_pptx_visual_analysis": "requires matching PDF input",
         "pdftoppm": shutil.which("pdftoppm"),
-        "libreoffice": shutil.which("libreoffice") or shutil.which("soffice"),
         "ffmpeg": shutil.which("ffmpeg"),
         "ffprobe": shutil.which("ffprobe"),
         "pillow": HAS_PILLOW,
@@ -415,7 +384,6 @@ def collect_environment() -> dict[str, Any]:
         "recommended_install": {
             "macos_homebrew": [
                 "brew install poppler",
-                "brew install --cask libreoffice",
                 "brew install ffmpeg",
             ],
             "python_fallback_for_pdf": "python3 -m pip install PyMuPDF",
@@ -482,25 +450,9 @@ def main() -> int:
     if suffix == ".pptx":
         slides = read_pptx(input_file)
         media_status = copy_animated_media(input_file, output_dir, slides)
-        with tempfile.TemporaryDirectory() as tmp:
-            pdf_for_render, export_attempts = convert_presentation_to_pdf(input_file, Path(tmp))
-            if pdf_for_render:
-                copied_pdf = output_dir / f"{input_file.stem}.pdf"
-                shutil.copy2(pdf_for_render, copied_pdf)
-                pdf_for_render = copied_pdf
-                render_status = "converted pptx to pdf"
-            else:
-                render_status = "pptx rendering unavailable; install LibreOffice/soffice for no-popup PDF export"
+        render_status = "pptx input; visual rendering skipped; provide a matching PDF for slide images"
     elif suffix == ".ppt":
-        with tempfile.TemporaryDirectory() as tmp:
-            pdf_for_render, export_attempts = convert_presentation_to_pdf(input_file, Path(tmp))
-            if pdf_for_render:
-                copied_pdf = output_dir / f"{input_file.stem}.pdf"
-                shutil.copy2(pdf_for_render, copied_pdf)
-                pdf_for_render = copied_pdf
-                render_status = "converted ppt to pdf"
-            else:
-                render_status = "ppt rendering unavailable; install LibreOffice/soffice for no-popup PDF export"
+        render_status = "ppt input; visual rendering skipped; provide a matching PDF for slide images"
     elif suffix == ".pdf":
         pdf_for_render = input_file
         slides = read_pdf_text(input_file)
@@ -582,14 +534,13 @@ def main() -> int:
     if rendered_images:
         print(f"Rendered images: {slides_dir}")
     else:
-        print("No slide images rendered. Install the required render dependencies before visual analysis.")
+        print("No slide images rendered. Provide a matching PDF for PPT/PPTX visual analysis, or install PDF render dependencies for PDF input.")
         if args.require_render:
             print("Rendering is required but no per-page images were produced.", file=sys.stderr)
             for item in missing_render_dependencies(input_file):
                 print(f"- {item}", file=sys.stderr)
             print("Recommended macOS setup:", file=sys.stderr)
             print("  brew install poppler", file=sys.stderr)
-            print("  brew install --cask libreoffice", file=sys.stderr)
             print("  brew install ffmpeg", file=sys.stderr)
             print("  python3 -m pip install PyMuPDF pypdf Pillow", file=sys.stderr)
             return 3

@@ -10,7 +10,6 @@ import shutil
 
 def main() -> int:
     pdftoppm = shutil.which("pdftoppm")
-    libreoffice = shutil.which("libreoffice") or shutil.which("soffice")
     ffmpeg = shutil.which("ffmpeg")
     ffprobe = shutil.which("ffprobe")
     pymupdf = bool(importlib.util.find_spec("fitz"))
@@ -18,14 +17,12 @@ def main() -> int:
     pypdf = bool(importlib.util.find_spec("pypdf"))
 
     stable_pdf = bool(pdftoppm or pymupdf)
-    stable_presentation = bool(libreoffice and stable_pdf)
     result = {
         "stable_pdf_rendering": stable_pdf,
-        "stable_ppt_or_pptx_rendering": stable_presentation,
+        "stable_ppt_or_pptx_visual_analysis": "requires matching PDF input",
         "tools": {
             "pdftoppm_poppler": pdftoppm,
             "pymupdf_fitz": pymupdf,
-            "libreoffice_or_soffice": libreoffice,
             "pillow": pillow,
             "pypdf": pypdf,
             "ffmpeg": ffmpeg,
@@ -34,7 +31,6 @@ def main() -> int:
         "recommended_install": {
             "macos_homebrew": [
                 "brew install poppler",
-                "brew install --cask libreoffice",
                 "brew install ffmpeg",
             ],
             "python_fallback_for_pdf": "python3 -m pip install PyMuPDF",

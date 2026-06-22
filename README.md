@@ -17,9 +17,9 @@ It is especially useful for visual or design-heavy presentations where slide tex
   - Discipline: architecture and interior design, interaction design, visual communication, art design, graphic design, or brand design.
   - Scenario: formal presentation, classroom teaching, portfolio defense, or casual sharing.
 - Analyze the whole deck context before writing per-slide scripts.
-- Render slides to images when local tools are available.
+- Render PDF pages to slide images when local tools are available.
 - Extract GIF keyframes and video preview frames when possible.
-- Prefer a no-popup, non-GUI rendering path for PPT/PPTX when LibreOffice is installed.
+- Avoid PowerPoint, Keynote, LibreOffice, and `soffice` conversion by default.
 - Use conservative wording when visual meaning is uncertain.
 - Keep intermediate files temporary by default.
 - Never overwrite the original deck.
@@ -163,19 +163,23 @@ Why this helps:
 
 When both files are provided, the skill should render and inspect the PDF, then insert the final per-slide notes into a safe `_with_notes.pptx` copy.
 
-If only a PPT/PPTX is provided, the skill should remind the user that a matching PDF improves visual accuracy. It can still attempt the stable no-popup rendering path when dependencies are available.
+If only a PPT/PPTX is provided, the skill should remind the user to provide a matching PDF before visual/design analysis. It should not use LibreOffice/`soffice` to convert the PPT/PPTX.
 
 ## Recommended Environment
 
-The skill can extract text without all rendering tools, but visual understanding is much better when slides can be rendered to images.
+The skill can extract text without all rendering tools, but visual understanding requires rendered PDF page images.
 
-For the best "drop in a PPTX and get final files" experience without macOS PowerPoint permission popups, install the non-GUI rendering tools below.
+For the most reliable no-popup workflow, provide both files when you want notes written back:
+
+```text
+deck.pdf   -> visual analysis
+deck.pptx  -> speaker-note insertion
+```
 
 Recommended on macOS with Homebrew:
 
 ```bash
 brew install poppler
-brew install --cask libreoffice
 brew install ffmpeg
 ```
 
@@ -188,7 +192,6 @@ python3 -m pip install PyMuPDF pypdf Pillow
 Tool roles:
 
 - Poppler `pdftoppm`: render PDF pages to images.
-- LibreOffice `soffice`: convert PPT/PPTX to PDF without opening PowerPoint or Keynote.
 - ffmpeg/ffprobe: extract video preview frames.
 - Pillow: create GIF keyframe sheets and contact sheets.
 - pypdf: extract PDF text when rendering is unavailable.
@@ -207,17 +210,16 @@ The skill is designed to avoid interactive PowerPoint or Keynote automation by d
 
 Recommended path for PPT/PPTX:
 
-1. LibreOffice converts the deck to PDF in headless mode.
+1. The user provides a matching PDF exported from the presentation.
 2. Poppler or PyMuPDF renders the PDF into slide images.
-3. Codex analyzes the rendered pages and writes the speaker notes Markdown.
-4. For PPTX input, the script creates a new `_with_notes.pptx` copy with notes inserted.
+3. Codex analyzes the rendered PDF pages and writes the speaker notes Markdown.
+4. If a PPTX is also provided, the script creates a new `_with_notes.pptx` copy with notes inserted.
 
-If LibreOffice is not installed, the skill should ask whether to install the missing no-popup dependencies or continue with a limited text-only draft. PowerPoint/Keynote automation should only be used if the user explicitly accepts possible macOS permission prompts.
+The skill should not call LibreOffice/`soffice` to convert PPT/PPTX files. This avoids app crashes, layout drift, and macOS permission prompts. PowerPoint/Keynote automation should only be used if the user explicitly accepts possible permission prompts.
 
 Stable no-popup rendering requirements:
 
 - `brew install poppler`
-- `brew install --cask libreoffice`
 - `brew install ffmpeg`
 
 GIF keyframes use Python/Pillow. Video keyframes use ffmpeg.
