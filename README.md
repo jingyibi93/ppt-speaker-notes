@@ -105,28 +105,30 @@ It should ask only one question at a time, so the setup feels like a short guide
 
 The role, discipline, and scenario change both the tone and the organization of the script.
 
+All setup steps support both Chinese and English. The skill should ask profile questions, output-folder questions, PDF/PPTX reminders, dependency messages, and completion summaries in the user's interaction language. It should also accept choices in either language, such as `设计师` or `designer`, `建筑及室内设计` or `architecture and interior design`, and `正式汇报` or `formal presentation`.
+
 Role:
 
-- Student: more reflective and process-aware.
-- Teacher: more explanatory and structured.
-- Designer: more professional, intention-led, and tradeoff-aware.
-- Working professional: more concise, goal-oriented, and stakeholder-aware.
+- Student / 学生: more reflective and process-aware.
+- Teacher / 老师: more explanatory and structured.
+- Designer / 设计师: more professional, intention-led, and tradeoff-aware.
+- Working professional / 职场人: more concise, goal-oriented, and stakeholder-aware.
 
 Discipline:
 
-- Architecture and interior design: site, spatial sequence, circulation, material, scale, light, atmosphere, and user scenario.
-- Interaction design: user needs, tasks, flows, information architecture, feedback, states, usability, and accessibility.
-- Visual communication: message hierarchy, typography, layout, media, image rhythm, and audience perception.
-- Art design: concept, medium, form, sensory experience, cultural reference, and interpretation.
-- Graphic design: grid, typography, composition, contrast, color system, print/screen context, and information clarity.
-- Brand design: positioning, identity system, brand personality, touchpoints, campaign context, recognition, and brand experience.
+- Architecture and interior design / 建筑及室内设计: site, spatial sequence, circulation, material, scale, light, atmosphere, and user scenario.
+- Interaction design / 交互设计: user needs, tasks, flows, information architecture, feedback, states, usability, and accessibility.
+- Visual communication / 视觉传达: message hierarchy, typography, layout, media, image rhythm, and audience perception.
+- Art design / 艺术设计: concept, medium, form, sensory experience, cultural reference, and interpretation.
+- Graphic design / 平面设计: grid, typography, composition, contrast, color system, print/screen context, and information clarity.
+- Brand design / 品牌设计: positioning, identity system, brand personality, touchpoints, campaign context, recognition, and brand experience.
 
 Scenario:
 
-- Formal presentation: polished, structured, and confident.
-- Classroom teaching: slower, clearer, and more explanatory.
-- Portfolio defense: focused on contribution, process, decisions, outcome, and reflection.
-- Casual sharing: warmer, lighter, and more conversational.
+- Formal presentation / 正式汇报: polished, structured, and confident.
+- Classroom teaching / 课堂讲解: slower, clearer, and more explanatory.
+- Portfolio defense / 作品集答辩: focused on contribution, process, decisions, outcome, and reflection.
+- Casual sharing / 轻松分享: warmer, lighter, and more conversational.
 
 ## Output
 

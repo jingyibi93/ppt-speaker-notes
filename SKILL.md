@@ -47,23 +47,25 @@ Use this skill to create speaker notes for an existing presentation that has lit
 
 Before writing the final notes, determine a presentation profile. The profile affects tone, content organization, and professional terminology.
 
+- All profile modes and setup prompts must work in both Chinese and English. Localize the option labels and the question text to the user's interaction language. If the user asks for bilingual notes or explicitly wants a bilingual setup, show Chinese and English labels together.
+- Accept profile choices in either language and map them to the same internal profile. For example, `老师` and `teacher` are the same role; `建筑及室内设计` and `architecture and interior design` are the same discipline; `正式汇报` and `formal presentation` are the same scenario.
 - Role options:
-  - Student: reflective, process-aware, able to explain learning, research, iteration, and design decisions without sounding overly senior.
-  - Teacher: explanatory and structured, with more context-setting and concept clarification. Use this only when the user explicitly chooses teacher or the deck is clearly for teaching.
-  - Designer: professional, intention-led, focused on rationale, craft, user or audience impact, and design tradeoffs.
-  - Working professional: concise, outcome-oriented, stakeholder-aware, with clearer links to goals, constraints, collaboration, and next steps.
+  - Student / 学生: reflective, process-aware, able to explain learning, research, iteration, and design decisions without sounding overly senior.
+  - Teacher / 老师: explanatory and structured, with more context-setting and concept clarification. Use this only when the user explicitly chooses teacher or the deck is clearly for teaching.
+  - Designer / 设计师: professional, intention-led, focused on rationale, craft, user or audience impact, and design tradeoffs.
+  - Working professional / 职场人: concise, outcome-oriented, stakeholder-aware, with clearer links to goals, constraints, collaboration, and next steps.
 - Discipline options:
-  - Architecture and interior design: emphasize site/context, spatial sequence, circulation, scale, program, material, structure, atmosphere, light, construction logic, and user scenario.
-  - Interaction design: emphasize user needs, tasks, journey, information architecture, interaction flow, feedback, states, usability, accessibility, and product experience.
-  - Visual communication: emphasize message hierarchy, visual rhythm, typography, imagery, layout, media, audience perception, and communication effectiveness.
-  - Art design: emphasize concept, medium, form, sensory experience, cultural reference, expression, installation or object relationship, and interpretive openness.
-  - Graphic design: emphasize grid, typography, composition, contrast, color system, print or screen context, information clarity, and visual consistency.
-  - Brand design: emphasize positioning, brand personality, identity system, logo/type/color rules, touchpoints, campaign context, recognition, and brand experience.
+  - Architecture and interior design / 建筑及室内设计: emphasize site/context, spatial sequence, circulation, scale, program, material, structure, atmosphere, light, construction logic, and user scenario.
+  - Interaction design / 交互设计: emphasize user needs, tasks, journey, information architecture, interaction flow, feedback, states, usability, accessibility, and product experience.
+  - Visual communication / 视觉传达: emphasize message hierarchy, visual rhythm, typography, imagery, layout, media, audience perception, and communication effectiveness.
+  - Art design / 艺术设计: emphasize concept, medium, form, sensory experience, cultural reference, expression, installation or object relationship, and interpretive openness.
+  - Graphic design / 平面设计: emphasize grid, typography, composition, contrast, color system, print or screen context, information clarity, and visual consistency.
+  - Brand design / 品牌设计: emphasize positioning, brand personality, identity system, logo/type/color rules, touchpoints, campaign context, recognition, and brand experience.
 - Scenario options:
-  - Formal presentation: polished, structured, confident, concise, and suitable for review panels or clients.
-  - Classroom teaching: explanatory, slower-paced, with more definition, comparison, and step-by-step reasoning.
-  - Portfolio defense: first-person when supported, focused on personal contribution, design process, decisions, results, reflection, and ability.
-  - Casual sharing: warmer, lighter, more conversational, with less rigid structure and simpler transitions.
+  - Formal presentation / 正式汇报: polished, structured, confident, concise, and suitable for review panels or clients.
+  - Classroom teaching / 课堂讲解: explanatory, slower-paced, with more definition, comparison, and step-by-step reasoning.
+  - Portfolio defense / 作品集答辩: first-person when supported, focused on personal contribution, design process, decisions, results, reflection, and ability.
+  - Casual sharing / 轻松分享: warmer, lighter, more conversational, with less rigid structure and simpler transitions.
 - Infer the profile from the user's request only when it is explicit or strongly implied, such as "for portfolio defense", "for class lecture", "as a brand designer", or "teacher notes".
 - If any of role, discipline, scenario, or final output folder is unclear, use a step-by-step selection flow instead of asking for everything at once. Ask only one question at a time, wait for the user's answer, then ask the next missing question.
 - Use this Chinese step-by-step flow when the user is working in Chinese:
@@ -102,6 +104,8 @@ Before writing the final notes, determine a presentation profile. The profile af
   2. If the user asks in English and does not name a language, generate English notes.
   3. If the user asks in Chinese and does not name a language, generate Chinese notes.
   4. If the user mixes languages and the desired output language is unclear, ask one concise question before generating: "Should I write the speaker notes in English, Chinese, or both?"
+- Use the same language policy for every interaction step, not only the final notes. This includes role/discipline/scenario questions, output-folder questions, PPTX+PDF reminders, dependency explanations, render-failure messages, limitation labels, completion summaries, and file names or headings when practical.
+- If the user asks in Chinese, ask setup questions and explain limitations in Chinese. If the user asks in English, ask setup questions and explain limitations in English. If the user requests bilingual output, use bilingual prompts for setup choices when asking new questions.
 - Follow explicit user language requests over inferred language, including requests like "英文讲稿", "English notes", "make it suitable for an English presentation", "for an overseas interview", or "给海外面试用".
 - If the deck text is Chinese but the user asks for English notes, translate the meaning naturally instead of mirroring the slide text word for word.
 - If the deck text is English but the user asks in Chinese, produce Chinese notes while preserving important English names, terms, brands, and quoted slide titles.
